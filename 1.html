@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>鷺江暮色：消失的第十三階</title>
+    <style>
+        body {
+            background-color: #0a0a0a;
+            color: #d1d1d1;
+            font-family: "Microsoft JhengHei", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 80%;
+            max-width: 700px;
+            background: #1a1a1a;
+            padding: 30px;
+            border: 1px solid #333;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        #stats {
+            font-size: 0.9em;
+            color: #888;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+
+        #text-display {
+            font-size: 1.2em;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            min-height: 150px;
+        }
+
+        .choices {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        button {
+            background: transparent;
+            color: #aaa;
+            border: 1px solid #444;
+            padding: 12px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.3s;
+            font-size: 1em;
+        }
+
+        button:hover {
+            background: #2a2a2a;
+            color: #ff4d4d;
+            border-color: #ff4d4d;
+            padding-left: 20px;
+        }
+
+        .highlight {
+            color: #ff4d4d;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="stats">
+        地點：<span id="location">鷺江國小 - 穿堂</span> | 
+        理智值：<span id="sanity">100</span>
+    </div>
+    
+    <div id="text-display">
+        </div>
+
+    <div class="choices" id="choice-buttons">
+        </div>
+</div>
+
+<script>
+    let sanity = 100;
+    const textDisplay = document.getElementById('text-display');
+    const choiceButtons = document.getElementById('choice-buttons');
+    const sanityDisplay = document.getElementById('sanity');
+    const locationDisplay = document.getElementById('location');
+
+    const storyNodes = {
+        start: {
+            text: "夕陽沉入地平線，鷺江國小的校園被染成一片詭異的橘紅。你發現你的筆記本忘在教室裡了。當你踏入穿堂時，校門口傳來『喀答』一聲，警衛室的燈熄滅了。",
+            location: "學校大門穿堂",
+            choices: [
+                { text: "快步走上樓梯回到教室", nextNode: 'stairs' },
+                { text: "先去警衛室確認是否還有人", nextNode: 'guard_room' }
+            ]
+        },
+        guard_room: {
+            text: "警衛室空無一人，電話話筒懸掛在半空中，傳出規律的『嘟——嘟——』聲。桌上的巡邏表停留在今天的日期，但簽名欄寫滿了你的名字。",
+            location: "警衛室外",
+            sanityChange: -10,
+            choices: [
+                { text: "感到不安，趕快離開去教室", nextNode: 'stairs' },
+                { text: "嘗試接起電話", nextNode: 'phone_call' }
+            ]
+        },
+        phone_call: {
+            text: "話筒那頭傳來濕潤的呼吸聲，一個微弱的聲音說：『你不該回來的...他在頂樓等你。』電話隨即斷線。",
+            location: "警衛室內",
+            sanityChange: -20,
+            choices: [
+                { text: "丟下話筒奔向樓梯", nextNode: 'stairs' }
+            ]
+        },
+        stairs: {
+            text: "你來到通往教室的樓梯口。明明教室在三樓，但你爬了許久，卻發現樓層標示牌寫著 <span class='highlight'>『地下四樓』</span>。四周的空氣變得潮濕且寒冷。",
+            location: "無盡的樓梯",
+            sanityChange: -10,
+            choices: [
+                { text: "繼續往上爬，這一定是幻覺", nextNode: 'classroom_hallway' },
+                { text: "嘗試往下走回操場", nextNode: 'loop_stairs' }
+            ]
+        },
+        loop_stairs: {
+            text: "你往下跑了兩層，卻再次回到了同樣的標示牌前。樓梯似乎封閉了空間。此時，你聽到上方傳來緩慢的腳步聲...『啪、嗒、啪、嗒』。",
+            location: "詭異的樓梯間",
+            sanityChange: -15,
+            choices: [
+                { text: "躲進走廊的陰影處", nextNode: 'classroom_hallway' },
+                { text: "回頭查看是誰", nextNode: 'bad_ending_1' }
+            ]
+        },
+        classroom_hallway: {
+            text: "你終於進到了教室走廊。走廊盡頭的窗戶倒映著你的身影，但鏡像中的你...正對著你露出不自然且僵硬的微笑。",
+            location: "三樓走廊",
+            sanityChange: -15,
+            choices: [
+                { text: "不看鏡子，衝進教室拿筆記本", nextNode: 'ending_neutral' },
+                { text: "凝視那個鏡像", nextNode: 'bad_ending_2' }
+            ]
+        },
+        ending_neutral: {
+            text: "你抓起筆記本後緊閉雙眼大聲祈禱。再次睜眼時，陽光竟然照了進來。一切似乎恢復了正常，但你筆記本的第一頁被寫上了一行紅字：<br><br>『明天見。』",
+            location: "教室內",
+            choices: [
+                { text: "重新開始", nextNode: 'start_reset' }
+            ]
+        },
+        bad_ending_1: {
+            text: "你回頭，卻看見一個穿著舊式校服、沒有面孔的學生站在那裡。你的意識逐漸模糊...<br><br><span class='highlight'>【結局：失蹤的學生】</span>",
+            location: "黑暗之中",
+            choices: [{ text: "重新開始", nextNode: 'start_reset' }]
+        },
+        bad_ending_2: {
+            text: "鏡像中的你伸出了手，將你拖入了冰冷的鏡面世界。現在，換成『你』在鏡子裡看著空蕩蕩的走廊了。<br><br><span class='highlight'>【結局：鏡中替身】</span>",
+            location: "鏡像世界",
+            choices: [{ text: "重新開始", nextNode: 'start_reset' }]
+        },
+        game_over_sanity: {
+            text: "你的精神徹底崩潰了。在鷺江國小的角落裡，多了一個不停自言自語的身影。<br><br><span class='highlight'>【結局：喪失理智】</span>",
+            location: "瘋狂邊緣",
+            choices: [{ text: "重新開始", nextNode: 'start_reset' }]
+        }
+    };
+
+    function updateGame(nodeKey) {
+        if (nodeKey === 'start_reset') {
+            sanity = 100;
+            nodeKey = 'start';
+        }
+
+        const node = storyNodes[nodeKey];
+        
+        // 更新數值
+        if (node.sanityChange) {
+            sanity += node.sanityChange;
+            if (sanity <= 0) {
+                sanity = 0;
+                return updateGame('game_over_sanity');
+            }
+        }
+        
+        sanityDisplay.innerText = sanity;
+        locationDisplay.innerText = node.location;
+        textDisplay.innerHTML = node.text;
+
+        // 清除舊按鈕
+        choiceButtons.innerHTML = '';
+
+        // 產生新按鈕
+        node.choices.forEach(choice => {
+            const btn = document.createElement('button');
+            btn.innerText = choice.text;
+            btn.onclick = () => updateGame(choice.nextNode);
+            choiceButtons.appendChild(btn);
+        });
+    }
+
+    // 初始化遊戲
+    updateGame('start');
+</script>
+
+</body>
+</html>
